@@ -1,0 +1,14 @@
+[Unit]
+Description=discord-watchdog service
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/python3 /home/someone/Github/discord-watchdog/bot.py
+User=someone
+WorkingDirectory=/home/someone/Github/discord-watchdog
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
