@@ -54,7 +54,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=".watchdog help"))
 
 
-@tasks.loop(seconds=30, count=None)
+@tasks.loop(minutes=30, count=None)
 async def check_loop():
     logging.info('starting check_loop')
 
