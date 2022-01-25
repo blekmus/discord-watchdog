@@ -16,7 +16,7 @@ token = os.environ['TOKEN']
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] - [%(filename)s > %(funcName)s() > %(lineno)s] - %(message)s",
     filename="discord-watchdog.log",
-    level=logging.WARNING,
+    level=logging.INFO,
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
@@ -45,16 +45,19 @@ async def on_ready():
         return
 
     bot.run_time = time_func()
+    bot.last_check = datetime.now()
     bot.is_startup = False
     check_loop.start()
-    print('started')
+    print("started")
     logging.info("Bot started")
 
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=".watchdog help"))
 
 
-@tasks.loop(minutes=30, count=None)
+@tasks.loop(seconds=30, count=None)
 async def check_loop():
+    logging.info('starting check_loop')
+
     # get channel to send messages
     for i in bot.get_guild(646638903503224833).text_channels:
         if i.name == bot.channel_name:
@@ -63,26 +66,36 @@ async def check_loop():
     # get current news entry
     with open('current.txt', 'r') as file:
         current_entry = int(file.readlines()[0])
+        logging.info(f'current.txt id: {str(current_entry)}')
 
     # send requests
     news_entries = get_entries(current_entry)
 
-    # if there aren't any entries return
+    if news_entries:
+        logging.info(f'recieved {len(news_entries)} new entries')
+
+    # if there aren't any entries end loop
     if not news_entries or len(news_entries) == 0:
+        bot.last_check = datetime.now()
+        logging.info('no entries to process')
+        logging.info('ending check_loop')
         return
 
     # loop through entries and send embeds
     for entry in news_entries:
+        logging.info(f"sending embed for id: {str(entry['id'])}")
         embed = embed_content(entry)
         await channel.send(embed=embed)
 
     # set new current entry id to curret.txt
     new_current_entry = news_entries[0]['id']
     with open('current.txt', 'w') as file:
+        logging.info(f"saving new current id: {str(new_current_entry)}")
         file.write(str(new_current_entry))
 
     # set last_check for .watchdog stats
     bot.last_check = datetime.now()
+    logging.info('ending check_loop')
 
 
 @bot.command()
@@ -148,24 +161,24 @@ async def help(ctx, var=None):
         raise AttributeError
 
 
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        logging.info("Bot activity. Missing arguments")
-        await ctx.send("Missing arguments")
-        return
+# @bot.event
+# async def on_command_error(ctx, error):
+#     if isinstance(error, commands.MissingRequiredArgument):
+#         logging.info("Bot activity. Missing arguments")
+#         await ctx.send("Missing arguments")
+#         return
 
-    elif isinstance(error, commands.CommandInvokeError):
-        logging.info("Bot activity. Syntax error")
-        await ctx.send("Syntax error")
-        return
+#     elif isinstance(error, commands.CommandInvokeError):
+#         logging.info("Bot activity. Syntax error")
+#         await ctx.send("Syntax error")
+#         return
 
-    elif isinstance(error, commands.CommandNotFound):
-        logging.info("Bot activity. Command not found")
-        await ctx.send('Command not found')
-        return
+#     elif isinstance(error, commands.CommandNotFound):
+#         logging.info("Bot activity. Command not found")
+#         await ctx.send('Command not found')
+#         return
 
-    raise error
+#     raise error
 
 
 bot.loop.run_until_complete(bot.run(token))
