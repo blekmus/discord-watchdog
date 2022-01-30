@@ -161,24 +161,24 @@ async def help(ctx, var=None):
         raise AttributeError
 
 
-# @bot.event
-# async def on_command_error(ctx, error):
-#     if isinstance(error, commands.MissingRequiredArgument):
-#         logging.info("Bot activity. Missing arguments")
-#         await ctx.send("Missing arguments")
-#         return
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        logging.info("Bot activity. Missing arguments")
+        await ctx.send("Missing arguments")
+        return
 
-#     elif isinstance(error, commands.CommandInvokeError):
-#         logging.info("Bot activity. Syntax error")
-#         await ctx.send("Syntax error")
-#         return
+    elif isinstance(error, commands.CommandInvokeError):
+        logging.info("Bot activity. Syntax error")
+        await ctx.send("Syntax error")
+        return
 
-#     elif isinstance(error, commands.CommandNotFound):
-#         logging.info("Bot activity. Command not found")
-#         await ctx.send('Command not found')
-#         return
+    elif isinstance(error, commands.CommandNotFound):
+        logging.info("Bot activity. Command not found")
+        await ctx.send('Command not found')
+        return
 
-#     raise error
+    raise error
 
 
 bot.loop.run_until_complete(bot.run(token))
