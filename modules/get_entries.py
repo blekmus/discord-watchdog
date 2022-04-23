@@ -1,45 +1,36 @@
 import requests
 from operator import itemgetter
 from modules.user_agents import get_agent
+# from user_agents import get_agent
+
 
 def get_entries(current_entry):
-    verified = requests.get('https://watchdogapi.paladinanalytics.com/public/feed?type=verified', headers=get_agent())
-    fake = requests.get('https://watchdogapi.paladinanalytics.com/public/feed?type=fake', headers=get_agent())
+    query = """
+        query PublicPosts {
+            getPublicPosts(page: 1) {
+                posts {
+                    id
+                    type
+                    source_name
+                    timestamp
+                    en_title
+                    featured_image_url
+                    en_readmore_link
+                    primary_rating
+                    en_description
+                    verification_url
+                }
+            }
+        }
+    """
+
+    data = requests.post('https://appendix-watchdog-api.herokuapp.com/graphql', headers=get_agent(), json={'query': query})
 
     # return if data isn't returned
-    if (verified.status_code != 200 or fake.status_code != 200):
+    if (data.status_code != 200 or data.json()['data']['getPublicPosts']['posts'] == []):
         return
 
-    entries = []
-
-    # convert verified entries to object and append to entries
-    for entry in verified.json()['body']:
-        entries.append({
-            'id': entry['id'],
-            'timestamp': entry['timestamp'],
-            'title': entry['en_title'],
-            'description': entry['en_description'],
-            'type': 'verified',
-            'url': entry['source_link'],
-            'source_name': entry['source_name'],
-        })
-
-    # convert fake entries to object and append to entries
-    for entry in fake.json()['body']:
-        entries.append({
-            'id': entry['id'],
-            'timestamp': entry['timestamp'],
-            'title': entry['en_title'],
-            'description': entry['en_description'],
-            'type': 'fake',
-            'url': entry['source_link'],
-            'source_name': entry['source_name'],
-        })
-
-    # sort entries in descending order
-    entries = sorted(entries, key=itemgetter('id'), reverse=True)
-
     # remove older entries
-    entries = [entry for entry in entries if int(entry['id']) > current_entry]
+    entries = [entry for entry in data.json()['data']['getPublicPosts']['posts'] if int(entry['id']) > current_entry]
 
     return entries
